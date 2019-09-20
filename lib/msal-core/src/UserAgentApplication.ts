@@ -785,7 +785,7 @@ export class UserAgentApplication {
         }, this.config.system.loadFrameTimeout);
 
         const iframe = await WindowUtils.loadFrame(urlNavigate, frameName, this.config.system.navigateFrameWait, this.logger);
-        const hash = await WindowUtils.monitorWindowForHash(iframe.contentWindow, this.config.system.loadFrameTimeout);
+        const hash = await WindowUtils.monitorWindowForHash(iframe.contentWindow, this.config.system.loadFrameTimeout, urlNavigate);
         if (hash) {
             this.handleAuthenticationResponse(hash);
         }

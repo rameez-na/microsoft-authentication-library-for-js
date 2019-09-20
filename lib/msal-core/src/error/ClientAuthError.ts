@@ -29,6 +29,10 @@ export const ClientAuthErrorMessage = {
         code: "token_renewal_error",
         desc: "Token renewal operation failed due to timeout."
     },
+    acquireTokenSilentError: {
+        code: "server_failed_for_acquireTokenSilent_call",
+        desc: "Please clck the link for the server error: "
+    },
     invalidIdToken: {
         code: "invalid_id_token",
         desc: "Invalid ID token format."
@@ -132,6 +136,11 @@ export class ClientAuthError extends AuthError {
     static createTokenRenewalTimeoutError(): ClientAuthError {
         return new ClientAuthError(ClientAuthErrorMessage.tokenRenewalError.code,
             ClientAuthErrorMessage.tokenRenewalError.desc);
+    }
+
+    static createAcquireTokenSilentError(urlNavigate: string): ClientAuthError {
+        return new ClientAuthError(ClientAuthErrorMessage.acquireTokenSilentError.code,
+            ClientAuthErrorMessage.acquireTokenSilentError.desc + urlNavigate);
     }
 
     static createInvalidIdTokenError(idToken: IdToken) : ClientAuthError {
