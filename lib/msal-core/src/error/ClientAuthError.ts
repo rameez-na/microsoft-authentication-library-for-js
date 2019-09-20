@@ -31,7 +31,7 @@ export const ClientAuthErrorMessage = {
     },
     acquireTokenSilentError: {
         code: "server_failed_for_acquireTokenSilent_call",
-        desc: "Please clck the link for the server error: "
+        desc: "Please click the link for the server error: "
     },
     invalidIdToken: {
         code: "invalid_id_token",
