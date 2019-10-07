@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License.
  */
-
+import { ApplicationInsights } from "@microsoft/applicationinsights-web";
 import { AccessTokenCacheItem } from "./AccessTokenCacheItem";
 import { AccessTokenKey } from "./AccessTokenKey";
 import { AccessTokenValue } from "./AccessTokenValue";
@@ -153,6 +153,7 @@ export class UserAgentApplication {
     private clientId: string;
     private inCookie: boolean;
     private telemetryManager: TelemetryManager;
+    private ai: ApplicationInsights;
 
     // Cache and Account info referred across token grant flow
     protected cacheStorage: Storage;
@@ -229,6 +230,12 @@ export class UserAgentApplication {
         this.inCookie = this.config.cache.storeAuthStateInCookie;
 
         this.telemetryManager = this.getTelemetryManagerFromConfig(this.config.system.telemetry, this.clientId);
+        this.ai = new ApplicationInsights({ 
+            config: {
+                instrumentationKey: "537baba3-5a17-4219-9c1d-eb5603c77efa"
+            }
+        });
+        this.ai.loadAppInsights();
 
         // if no authority is passed, set the default: "https://login.microsoftonline.com/common"
         this.authority = this.config.auth.authority || DEFAULT_AUTHORITY;
@@ -315,6 +322,8 @@ export class UserAgentApplication {
     }
 
     private authErrorHandler(interactionType: InteractionType, authErr: AuthError, response: AuthResponse, reject?: any) : void {
+        this.ai.trackException({exception: authErr});
+        this.ai.flush();
         if (interactionType === Constants.interactionTypeRedirect) {
             if (this.errorReceivedCallback) {
                 this.errorReceivedCallback(authErr, response.accountState);
@@ -726,7 +735,10 @@ export class UserAgentApplication {
             // If popup closed or login in progress, cancel login
             if (popupWindow && popupWindow.closed && (instance.loginInProgress || instance.acquireTokenInProgress)) {
                 if (reject) {
-                    reject(ClientAuthError.createUserCancelledError());
+                    const err = ClientAuthError.createUserCancelledError();
+                    this.ai.trackException({exception: err});
+                    reject(err);
+                    this.ai.flush();
                 }
                 window.clearInterval(pollTimer);
                 if (this.config.framework.isAngular) {
