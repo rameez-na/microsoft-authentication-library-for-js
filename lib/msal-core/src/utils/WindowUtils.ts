@@ -1,6 +1,8 @@
 import { ClientAuthError } from "../error/ClientAuthError";
 import { UrlUtils } from "./UrlUtils";
+import { StringUtils } from "./StringUtils";
 import { Logger } from "../Logger";
+import { AuthError } from "./../error/AuthError";
 
 export class WindowUtils {
     /**
@@ -17,6 +19,15 @@ export class WindowUtils {
      */
     static isInIframe(): boolean {
         return window.parent !== window;
+    }
+
+    /**
+     * @hidden
+     * Checks if the current page is running in an iframe.
+     * @ignore
+     */
+    static isWindowOnTop(): boolean {
+        return window.top === window;
     }
 
     /**
@@ -199,6 +210,25 @@ export class WindowUtils {
      */
     static closePopups(): void {
         WindowUtils.getPopups().forEach(popup => popup.close());
+    }
+
+    /**
+     * @hidden
+     * Used to redirect the browser to the STS authorization endpoint
+     * @param {string} urlNavigate - URL of the authorization endpoint
+     */
+    static navigateWindow(urlNavigate: string, logger: Logger, popupWindow?: Window) {
+        // Navigate if valid URL
+        if (urlNavigate && !StringUtils.isEmpty(urlNavigate)) {
+            const navigateWindow: Window = popupWindow ? popupWindow : window;
+            const logMessage: string = popupWindow ? "Navigated Popup window to:" + urlNavigate : "Navigate to:" + urlNavigate;
+            logger.infoPii(logMessage);
+            navigateWindow.location.replace(urlNavigate);
+        }
+        else {
+            logger.info("Navigate url is empty");
+            throw AuthError.createUnexpectedError("Navigate url is empty");
+        }
     }
 
 }
