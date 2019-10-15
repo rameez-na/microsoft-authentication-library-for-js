@@ -9,6 +9,7 @@ import { TelemetryEmitter } from "./telemetry/TelemetryTypes";
 
 /**
  * Cache location options supported by MSAL are:
+ *
  * - local storage: MSAL uses browsers local storage to store its cache
  * - session storage: MSAL uses the browsers session storage to store its cache
  */
@@ -30,7 +31,6 @@ const NAVIGATE_FRAME_WAIT = 500;
  *  - redirectUri                 - The redirect URI of the application, this should be same as the value in the application registration portal.Defaults to `window.location.href`.
  *  - postLogoutRedirectUri       - Used to redirect the user to this location after logout. Defaults to `window.location.href`.
  *  - navigateToLoginRequestUrl   - Used to turn off default navigation to start page after login. Default is true. This is used only for redirect flows.
- *
  */
 export type AuthOptions = {
     clientId: string;
@@ -54,6 +54,7 @@ export type CacheOptions = {
 
 /**
  * Telemetry Config Options
+ *
  * - applicationName              - Name of the consuming apps application
  * - applicationVersion           - Verison of the consuming application
  * - telemetryEmitter             - Function where telemetry events are flushed to
@@ -96,6 +97,17 @@ export type FrameworkOptions = {
 };
 
 /**
+ * Options to specify communication between embedded (iframed) apps and the Top Frame
+ *
+ * - topFrameOrigin             - origin check to restrict messages to the top frame origin only
+ * - embeddedFrameOrigin        - origin check to restrict messages to the top frame origin only
+ */
+export type BrokerOptions = {
+    topFrameOrigin?: string;
+    embeddedFrameOrigin?: string;
+};
+
+/**
  * Use the configuration object to configure MSAL and initialize the UserAgentApplication.
  *
  * This object allows you to configure important elements of MSAL functionality:
@@ -103,20 +115,22 @@ export type FrameworkOptions = {
  * - cache: this is where you configure cache location and whether to store cache in cookies
  * - system: this is where you can configure the logger, frame timeout etc.
  * - framework: this is where you can configure the running mode of angular. More to come here soon.
+ * - broker: this is where you can configure broker options if your application resides in an iframe and needs the topframe for interaction flows (redirect APIs only)
  */
 export type Configuration = {
     auth: AuthOptions,
     cache?: CacheOptions,
     system?: SystemOptions,
-    framework?: FrameworkOptions
+    framework?: FrameworkOptions,
+    broker?: BrokerOptions
 };
 
 const DEFAULT_AUTH_OPTIONS: AuthOptions = {
     clientId: "",
     authority: null,
     validateAuthority: true,
-    redirectUri: () => UrlUtils.getDefaultRedirectUri(),
-    postLogoutRedirectUri: () => UrlUtils.getDefaultRedirectUri(),
+    redirectUri: () => UrlUtils.getCurrentUri(),
+    postLogoutRedirectUri: () => UrlUtils.getCurrentUri(),
     navigateToLoginRequestUrl: true
 };
 
@@ -138,23 +152,29 @@ const DEFAULT_FRAMEWORK_OPTIONS: FrameworkOptions = {
     protectedResourceMap: new Map<string, Array<string>>()
 };
 
+const DEFAULT_BROKER_OPTIONS: BrokerOptions = {
+    topFrameOrigin: null,
+    embeddedFrameOrigin: null,
+};
+
 /**
  * MSAL function that sets the default options when not explicitly configured from app developer
  *
- * @param TAuthOptions
- * @param TCacheOptions
- * @param TSystemOptions
- * @param TFrameworkOptions
+ * @param AuthOptions
+ * @param CacheOptions
+ * @param SystemOptions
+ * @param FrameworkOptions
+ * @param BrokerOptions
  *
- * @returns TConfiguration object
+ * @returns Configuration object
  */
-
-export function buildConfiguration({ auth, cache = {}, system = {}, framework = {}}: Configuration): Configuration {
+export function buildConfiguration({ auth, cache = {}, system = {}, framework = {}, broker = {}}: Configuration): Configuration {
     const overlayedConfig: Configuration = {
         auth: { ...DEFAULT_AUTH_OPTIONS, ...auth },
         cache: { ...DEFAULT_CACHE_OPTIONS, ...cache },
         system: { ...DEFAULT_SYSTEM_OPTIONS, ...system },
-        framework: { ...DEFAULT_FRAMEWORK_OPTIONS, ...framework }
+        framework: { ...DEFAULT_FRAMEWORK_OPTIONS, ...framework },
+        broker: { ...DEFAULT_BROKER_OPTIONS, ...broker }
     };
     return overlayedConfig;
 }

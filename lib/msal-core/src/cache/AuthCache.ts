@@ -29,7 +29,6 @@ export class AuthCache extends BrowserStorage {// Singleton
      * @param storeAuthStateInCookie
      */
     private migrateCacheEntries(storeAuthStateInCookie: boolean) {
-
         const idTokenKey = `${Constants.cachePrefix}.${PersistentCacheKeys.IDTOKEN}`;
         const clientInfoKey = `${Constants.cachePrefix}.${PersistentCacheKeys.CLIENT_INFO}`;
         const errorKey = `${Constants.cachePrefix}.${PersistentCacheKeys.ERROR}`;

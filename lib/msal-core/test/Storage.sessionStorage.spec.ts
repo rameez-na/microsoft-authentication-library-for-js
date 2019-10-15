@@ -230,7 +230,6 @@ describe("CacheStorage.ts Class - Session Storage", function () {
             expect(msalCacheStorage.getItem(authorityKey)).to.be.eq(validAuthority);
 
             msalCacheStorage.removeAcquireTokenEntries(TEST_STATE);
-
             expect(msalCacheStorage.getItem(acquireTokenAccountKey)).to.be.null;
             expect(msalCacheStorage.getItem(authorityKey)).to.be.null;
         });

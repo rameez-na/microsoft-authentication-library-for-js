@@ -32,6 +32,9 @@ import { InteractionRequiredAuthError } from "./error/InteractionRequiredAuthErr
 import { AuthResponse, buildResponseStateOnly } from "./AuthResponse";
 import TelemetryManager from "./telemetry/TelemetryManager";
 import { TelemetryPlatform, TelemetryConfig } from "./telemetry/TelemetryTypes";
+import { MessageType, MessageHelper } from "./messaging/MessageHelper";
+import { MessageCache } from "./messaging/MessageCache";
+import { MessageListener } from "./messaging/MessageListener";
 
 // default authority
 const DEFAULT_AUTHORITY = "https://login.microsoftonline.com/common";
@@ -113,6 +116,20 @@ export type tokenReceivedCallback = (response: AuthResponse) => void;
 export type errorReceivedCallback = (authErr: AuthError, accountState: string) => void;
 
 /**
+ * top frame application calls this function to ack to proceed
+ * @param message
+ */
+export type processIframeRedirectCallback = (url: string) => any;
+
+/**
+ * A type alias for a iframeRedirectCallback function.
+ * {@link (iframeRedirectCallback:type)}
+ * @returns response of type {@link (callback function)}
+ * The function the top framed application listens to for a message from iframed application when consent is mandated.
+ */
+export type iframeRedirectCallback = (callback: processIframeRedirectCallback) => void;
+
+/**
  * UserAgentApplication class
  *
  * Object Instance that the developer can use to make loginXX OR acquireTokenXX functions
@@ -141,6 +158,11 @@ export class UserAgentApplication {
     private silentAuthenticationState: string;
     private silentLogin: boolean;
     private redirectCallbacksSet: boolean;
+
+    // message interface
+    private messageCache: MessageCache;
+    private messageListener: MessageListener;
+    private iframeRedirectCallback: iframeRedirectCallback = null;
 
     // Authority Functionality
     protected authorityInstance: Authority;
@@ -213,6 +235,10 @@ export class UserAgentApplication {
         // cache keys msal - typescript throws an error if any value other than "localStorage" or "sessionStorage" is passed
         this.cacheStorage = new AuthCache(this.clientId, this.config.cache.cacheLocation, this.inCookie);
 
+        // initialize the message interface
+        this.messageCache = new MessageCache(this.cacheStorage);
+        this.messageListener = new MessageListener(this.messageCache, this.logger, this.config.broker.embeddedFrameOrigin);
+
         // Initialize window handling code
         window.activeRenewals = {};
         window.renewStates = [];
@@ -220,13 +246,8 @@ export class UserAgentApplication {
         window.promiseMappedToRenewStates = { };
         window.msal = this;
 
-        const urlHash = window.location.hash;
-        const urlContainsHash = UrlUtils.urlContainsHash(urlHash);
-
-        // On the server 302 - Redirect, handle this
-        if (!this.config.framework.isAngular && urlContainsHash && !WindowUtils.isInIframe() && !WindowUtils.isInPopup()) {
-            this.handleAuthenticationResponse(urlHash);
-        }
+        // handle the STS redirect
+        this.handleRedirectHash();
     }
 
     // #region Redirect Callbacks
@@ -291,6 +312,43 @@ export class UserAgentApplication {
             reject(authErr);
         } else {
             throw ClientAuthError.createInvalidInteractionTypeError();
+        }
+    }
+
+    /**
+     * Call back registered by the top frame to notify the user for iframed application redirect requests
+     * @param iframeRedirectCallback
+     */
+    handleRedirectInIframes(iframeRedirectCallback: iframeRedirectCallback) {
+        if(iframeRedirectCallback) {
+            this.messageListener.setCallBack(iframeRedirectCallback);
+        }
+    }
+
+    /**
+     * helper function to handle all the various pathways when the STS redirects with the response
+     */
+    handleRedirectHash() {
+        const urlHash = window.location.hash;
+        const urlContainsHash = UrlUtils.urlContainsHash(urlHash);
+
+        // read the hash stored through the topframe in redirect by delegation flow
+        const urlTopFrame = this.messageCache.read(MessageType.URL_TOP_FRAME);
+        const cachedUrlHash = this.messageCache.read(MessageType.HASH);
+
+        // On the server 302 - Redirect, handle this
+        if (!this.config.framework.isAngular && urlContainsHash && !WindowUtils.isInIframe() && !WindowUtils.isInPopup()) {
+            // REDIRECT_IFRAMES: if we are in topframe, store the hash in the cache
+            if(urlTopFrame) {
+                MessageHelper.handleTopFrameRedirect(this.messageCache, urlTopFrame, urlHash, this.logger);
+            }
+            else {
+                this.handleAuthenticationResponse(urlHash);
+            }
+        }
+        // REDIRECT_IFRAMES: Handle the auth response on reload if the topframe redirected on the iframed app's behalf and saved the hash
+        else if (WindowUtils.isInIframe() && cachedUrlHash) {
+            this.handleAuthenticationResponse(cachedUrlHash);
         }
     }
 
@@ -516,8 +574,8 @@ export class UserAgentApplication {
                 throw ClientAuthError.createInvalidInteractionTypeError();
             }
 
-            // prompt user for interaction
-            this.navigateWindow(urlNavigate, popUpWindow);
+            // IFRAMEDAPPS: if we are redirecting in an iframe, post a message to the topFrame; else navigate to the popup Window
+            WindowUtils.navigateHelper(popUpWindow, urlNavigate, this.messageCache, this.logger, this.config.broker.topFrameOrigin);
 
             // popUpWindow will be null for redirects, so we dont need to attempt to monitor the window
             if (popUpWindow) {
@@ -550,6 +608,7 @@ export class UserAgentApplication {
                     this.cacheStorage.setItem(TemporaryCacheKeys.INTERACTION_STATUS, RequestStatus.CANCELLED);
                 }
             }
+
         }).catch((err) => {
             this.logger.warning("could not resolve endpoints");
             this.authErrorHandler(interactionType, ClientAuthError.createEndpointResolutionError(err.toString), buildResponseStateOnly(request.state), reject);
@@ -782,25 +841,6 @@ export class UserAgentApplication {
 
     /**
      * @hidden
-     * Used to redirect the browser to the STS authorization endpoint
-     * @param {string} urlNavigate - URL of the authorization endpoint
-     */
-    private navigateWindow(urlNavigate: string, popupWindow?: Window) {
-        // Navigate if valid URL
-        if (urlNavigate && !StringUtils.isEmpty(urlNavigate)) {
-            const navigateWindow: Window = popupWindow ? popupWindow : window;
-            const logMessage: string = popupWindow ? "Navigated Popup window to:" + urlNavigate : "Navigate to:" + urlNavigate;
-            this.logger.infoPii(logMessage);
-            navigateWindow.location.replace(urlNavigate);
-        }
-        else {
-            this.logger.info("Navigate url is empty");
-            throw AuthError.createUnexpectedError("Navigate url is empty");
-        }
-    }
-
-    /**
-     * @hidden
      * Used to add the developer requested callback to the array of callbacks for the specified scopes. The updated array is stored on the window object
      * @param {string} expectedState - Unique state identifier (guid).
      * @param {string} scope - Developer requested permissions. Not all scopes are guaranteed to be included in the access token returned.
@@ -867,7 +907,7 @@ export class UserAgentApplication {
             const urlNavigate = authority.EndSessionEndpoint
                 ? `${authority.EndSessionEndpoint}?${logout}`
                 : `${this.authority}oauth2/v2.0/logout?${logout}`;
-            this.navigateWindow(urlNavigate);
+            WindowUtils.navigateWindow(urlNavigate, this.logger);
         });
     }
 
@@ -1883,7 +1923,7 @@ export class UserAgentApplication {
      * @hidden
      * @ignore
      *
-     * @param loginInProgress
+     * @param inProgress
      */
     protected setInteractionInProgress(inProgress: boolean) {
         if (inProgress) {
