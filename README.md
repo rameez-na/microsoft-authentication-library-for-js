@@ -5,7 +5,7 @@ The Microsoft Authentication Library for JavaScript enables client-side JavaScri
 
 ## Repository
 
-### Core and wrapper libaries
+### Core and wrapper libraries
 
 The [`lib`](https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/lib) folder contains the source code for all of our libraries.
 
@@ -19,11 +19,11 @@ A wrapper of the core library for apps using AngularJS framework.
 
 ### Samples
 
-The [`samples`](https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/samples) folder contains sample applications for our libaries. A complete list of samples can be found [our our wiki](https://github.com/AzureAD/microsoft-authentication-library-for-js/wiki/Samples).
+The [`samples`](https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/samples) folder contains sample applications for our libraries. A complete list of samples can be found [our wiki](https://github.com/AzureAD/microsoft-authentication-library-for-js/wiki/Samples).
 
 ## Package versioning
 
-All of our libraries follow [semantic versioning](https://semver.org). We recommend using the latest version of each libary to ensure you have the latest security patches and bug fixes.
+All of our libraries follow [semantic versioning](https://semver.org). We recommend using the latest version of each library to ensure you have the latest security patches and bug fixes.
 
 ## Roadmap
 
