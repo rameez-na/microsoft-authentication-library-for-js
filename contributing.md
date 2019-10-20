@@ -34,7 +34,7 @@ projects.  Do not send your patch to us, we cannot accept it.
 In case of doubt, open an issue in the [issue tracker][].
 
 Especially do so if you plan to work on a major change in functionality.  Nothing is more
-frustrating than seeing your hard work go to waste because your vision
+frustrating than seeing your hard work go to waste because of your vision
 does not align with our goals for the SDK.
 
 
@@ -49,9 +49,9 @@ $ git checkout -b my-feature-branch
 
 ### BOOTSTRAP
 
-After you have cloned the repository, run `npm install` in the root folder. This will install the depedencies for all of the libraries and samples in the repo, create linkages between packages that have depedencies on each other, and run the build process for each of the libraries.
+After you have cloned the repository, run `npm install` in the root folder. This will install the dependencies for all of the libraries and samples in the repo, create linkages between packages that have dependencies on each other, and run the build process for each of the libraries.
 
-To reset each of the libraries, run `npm run clean` in the root folder, which will remove the `node_modules` folders and built files for each repo and sample.
+To reset each of the libraries, run `npm run clean` in the root folder, which will remove the `node_modules` folders and build files for each repo and sample.
 
 ### PRE COMMIT
 
@@ -61,9 +61,9 @@ We will automatically run lint as our pre-commit command. Failing to pass lintin
 $ npm run lint
 ```
 
-This will ensure any changes are consistent with the current code style. We uses tslint and you can find a list of linting rules in the tslint.json.
+This will ensure any changes are consistent with the current code style. We use tslint and you can find a list of linting rules in the tslint.json.
 
-If for some reason you still want to push without fixing the linting errors. You can add the follow option to your commit command to [bypass the pre-commit][]:
+If for some reason you still want to push without fixing the linting errors. You can add the following option to your commit command to [bypass the pre-commit][]:
 
 ```
 --no-verify
@@ -80,11 +80,11 @@ $ git config --global user.email "j.random.user@example.com"
 ```
 
 Writing good commit logs is important.  A commit log should describe what
-changed and why.  Follow these guidelines when writing one:
+changed and why.  Follow these guid elines when writing one:
 
 1. The first line should be 50 characters or less and contain a short
    description of the change prefixed with the name of the changed
-   subsystem (e.g. "net: add localAddress and localPort to Socket").
+   subsystem(e.g. "net: add local address and local Port to Socket").
 2. Keep the second line blank.
 3. Wrap all other lines at 72 columns.
 
@@ -93,9 +93,9 @@ A good commit log looks like this:
 ```
 fix: explaining the commit in one line
 
-Body of commit message is a few lines of text, explaining things
+Body of the commit message is a few lines of text, explaining things
 in more detail, possibly giving some background about the issue
-being fixed, etc etc.
+being fixed,etc.
 
 The body of the commit message can be several paragraphs, and
 please do proper word-wrap and keep columns shorter than about
@@ -141,7 +141,7 @@ the 'Pull Request' button and fill out the form.
 
 Pull requests are usually reviewed within a few days.  If there are comments
 to address, apply your changes in a separate commit and push that to your
-feature branch.  Post a comment in the pull request afterwards; GitHub does
+feature branch.  Post a comment in the pull request afterward; GitHub does
 not send out notifications when you add commits.
 
 
